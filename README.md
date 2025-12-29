@@ -51,8 +51,6 @@ pip install .
 ### 3.Train
 you need download vssm_tiny_0230_ckpt_epoch_262.pth and put it in src and then run MultimodalMain.ipynb
 
-### 4.Evaluate
-
 ## acknowledgement
 Our work based on these repo, if our work is useful for your research, pleese give these excellent work a ⭐:
 [InsectMamba](https://github.com/Mamba-Hub-CV/InsectMamba)
