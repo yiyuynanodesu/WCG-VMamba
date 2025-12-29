@@ -6,21 +6,58 @@
 
 ## Usage
 
+### 1.Clone this repo
+```bash
+git clone https://github.com/yiyuynanodesu/WCG-VMamba.git
+cd WCG
+```
 ### 1.Prepare Dataset
+he dataset we used in our paper is now open source, you can download our dataset in [MCDD](https://github.com/yiyuynanodesu/Multimodal-Corn-Disease-Dataset) and put it in the `./dataset` directory. The file structure is as follows:
+```bash
+--dataset
+    --MCDD
+        --csv
+            --test
+            --train
+        --data
+            --test
+            --train
 
+```
 
 
 ### 2.Prepare Enviroment
+```python
+# first prepare torch+cuda
+pip install timm
+pip install chardet
+pip install scikit-learn
+pip install pandas
+pip install opencv-python
+pip install PyWavelets
+pip install transformers==4.36.0
+pip install numpy==1.26.4
+pip install einops
+pip install fvcore
 
+# then you have to git clone VMamba to install selective_scan
+git clone https://github.com/MzeroMiko/VMamba.git
+cd VMamba/kernels/selective_scan/
+# modify setup.py line 45  MODES = ["oflex"]  ====> MODES = ["core", "oflex"]
+vim setup.py
+pip install .
 
-
+```
 ### 3.Train
+# you need download vssm_tiny_0230_ckpt_epoch_262.pth and put it in src
+run MultimodalMain.ipynb
 
-
-
-#### 4.Evaluate
+### 4.Evaluate
 
 ## acknowledgement
+Our work based on these repo, if our work is useful for your research, pleese give these excellent work a ⭐:
+[InsectMamba](https://github.com/Mamba-Hub-CV/InsectMamba)
+[ITIN](https://github.com/zhutong0219/ITIN.git)
 
 ## 🏁Cite Our Work
 

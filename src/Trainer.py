@@ -19,16 +19,23 @@ class Trainer():
         self.model = model.to(device)
         self.device = device
        
-        mamba_params = set(self.model.mamba_model.parameters())
+        bert_params = set(self.model.text_model.bert.parameters())
+        mamba_params = set(self.model.img_model.mamba_model.parameters())
+        other_params = list(set(self.model.parameters()) - bert_params - mamba_params)
         no_decay = ['bias', 'LayerNorm.weight']
         params = [
-            {'params': [p for n, p in self.model.mamba_model.named_parameters() if not any(nd in n for nd in no_decay)],
+            {'params': [p for n, p in self.model.text_model.bert.named_parameters() if not any(nd in n for nd in no_decay)],
+                'lr': self.config.bert_learning_rate, 'weight_decay': self.config.weight_decay},
+            {'params': [p for n, p in self.model.text_model.bert.named_parameters() if any(nd in n for nd in no_decay)],
+                'lr': self.config.bert_learning_rate, 'weight_decay': 0.0},
+            {'params': [p for n, p in self.model.img_model.mamba_model.named_parameters() if not any(nd in n for nd in no_decay)],
                 'lr': self.config.resnet_learning_rate, 'weight_decay': self.config.weight_decay},
-            {'params': [p for n, p in self.model.mamba_model.named_parameters() if any(nd in n for nd in no_decay)],
+            {'params': [p for n, p in self.model.img_model.mamba_model.named_parameters() if any(nd in n for nd in no_decay)],
                 'lr': self.config.resnet_learning_rate, 'weight_decay': 0.0},
+            {'params': other_params,
+                'lr': self.config.learning_rate, 'weight_decay': self.config.weight_decay},
         ]  
         self.optimizer = AdamW(params, lr=config.learning_rate)
-        self.loss_func = nn.CrossEntropyLoss()
 
     def train(self, train_loader):
             self.model.train()
@@ -39,11 +46,10 @@ class Trainer():
             for batch in tqdm(train_loader, desc='----- [Training] '):
                 texts, texts_mask, imgs, labels = batch
                 texts, texts_mask, imgs, labels = texts.to(self.device), texts_mask.to(self.device), imgs.to(self.device),labels.to(self.device)
-                prob_vec = self.model(imgs)
+                prob_vec, loss = self.model(texts, texts_mask, imgs, labels=labels)
                 if len(prob_vec.shape) == 1:
                     prob_vec = prob_vec.unsqueeze(0)
                 pred = torch.argmax(prob_vec, dim=1)
-                loss = self.loss_func(prob_vec, labels)
                 # metric
                 loss_list.append(loss.item())
                 true_labels.extend(labels.tolist())
@@ -65,12 +71,10 @@ class Trainer():
         for batch in tqdm(val_loader, desc='\t ----- [Validing] '):
             texts, texts_mask, imgs, labels = batch
             texts, texts_mask, imgs, labels = texts.to(self.device), texts_mask.to(self.device), imgs.to(self.device),labels.to(self.device)
-            prob_vec = self.model(imgs)
+            prob_vec = self.model(texts, texts_mask, imgs, labels=labels)
             if len(prob_vec.shape) == 1:
-                prob_vec = prob_vec.unsqueeze(0)
+                prob_vec, loss = prob_vec.unsqueeze(0)
             pred = torch.argmax(prob_vec, dim=1)
-            loss = self.loss_func(prob_vec, labels)
-
             # metric
             val_loss += loss.item()
             true_labels.extend(labels.tolist())
@@ -86,7 +90,7 @@ class Trainer():
         for batch in tqdm(test_loader, desc='----- [Predicting] '):
             texts, texts_mask, imgs, labels = batch
             texts, texts_mask, imgs = texts.to(self.device), texts_mask.to(self.device), imgs.to(self.device)
-            prob_vec = self.model(imgs)
+            prob_vec = self.model(texts, texts_mask, imgs)
             if len(prob_vec.shape) == 1:
                 prob_vec = prob_vec.unsqueeze(0)
             pred = torch.argmax(prob_vec, dim=1)
